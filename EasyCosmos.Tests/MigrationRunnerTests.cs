@@ -14,37 +14,38 @@ namespace EasyCosmos.Tests
 
         public MigrationRunnerTests()
         {
-            this.runner = new MigrationRunner(Mock.Object);
+            runner = new MigrationRunner(Mock.Object);
         }
-        
+
         [Fact]
-        public async Task CallsMigrationsInOrder()
+        public async Task SuccessfullExecutesMigrationsInOrder()
         {
-            var migrations = new TimedTestMigration[]
-            {
-                new _0003_TimedMigration(), 
-                new _0004_TimedMigration()
-            };
-            
-            var runner = new MigrationRunner(Mock.Object);
-            await runner.ApplyMigrations(migrations);
-            
-            Assert.True(migrations[0].ExecutedTime < migrations[1].ExecutedTime,
-                "execution times show migration 4 executed before migration 3");
-        }      
+            var expectedOrderedIds = GetType().Assembly.FindMigrations()
+                .ToDictionaryByMigrationNumber().OrderByNumber()
+                .Select(i => i.Key).OrderBy(i => i);
+
+            runner.ApplyMigrations(GetType().Assembly);
+
+            DidUpdateVersionAndMigrationDocuments();
+
+            var runOrder = updatedMigrationDocs.GroupBy(m => m.Value.MigrationNumber).Select(kv => kv.Key);
+
+            Assert.Equal(expectedOrderedIds.Count(), runOrder.Count());
+            Assert.True(expectedOrderedIds.SequenceEqual(runOrder));
+        }
 
         [Fact]
         public async Task SuccessfullyExecutesAllMigrationsInAssemblyMigrations()
         {
             var expectedMigrations = GetType().Assembly.FindMigrations()
                 .ToDictionaryByMigrationNumber();
-            
-            var runner = new MigrationRunner(Mock.Object);
+
             runner.ApplyMigrations(GetType().Assembly);
-            
+
             DidUpdateVersionAndMigrationDocuments();
-            Assert.True(updatedVersionDocs.Count == expectedMigrations.Count *2, "should be 2 calls for every migration");
-            
+            Assert.True(updatedVersionDocs.Count == expectedMigrations.Count * 2,
+                "should be 2 calls for every migration");
+
             foreach (var migration in expectedMigrations)
             {
                 updatedMigrationDocs.Any(kv => kv.Value.MigrationNumber == migration.Key);
@@ -56,8 +57,8 @@ namespace EasyCosmos.Tests
         {
             var runner = new MigrationRunner(Mock.Object);
             runner.WithCreatMigration(t => new MigrationWithDependency(""));
-            runner.ApplyMigrations(new []{typeof(MigrationWithDependency)});
-            
+            runner.ApplyMigrations(new[] {typeof(MigrationWithDependency)});
+
             DidUpdateVersionAndMigrationDocuments();
         }
 
@@ -65,7 +66,7 @@ namespace EasyCosmos.Tests
         public void WithNoMigrationNumberTheTitleIsUsedInIdInstead()
         {
             var expectedTitle = new MigrationDetails().id + nameof(TimedTestMigration);
-            
+
             var migration = new TimedTestMigration();
             runner.ApplyMigrations(new[] {migration});
             DidUpdateVersionAndMigrationDocuments();
@@ -77,8 +78,6 @@ namespace EasyCosmos.Tests
         {
             Assert.True(updatedVersionDocs.Count > 0, "failed called to ever update version docs");
             Assert.True(updatedMigrationDocs.Count > 0, "failed called to ever update migration docs");
-
         }
-        
     }
 }

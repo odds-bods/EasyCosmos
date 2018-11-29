@@ -18,7 +18,7 @@ namespace EasyCosmos.Tests
         }
 
         [Fact]
-        public async Task SuccessfullExecutesMigrationsInOrder()
+        public async Task SuccessfullyExecutesMigrationsInOrder()
         {
             var expectedOrderedIds = GetType().Assembly.FindMigrations()
                 .ToDictionaryByMigrationNumber().OrderByNumber()

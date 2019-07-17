@@ -15,12 +15,21 @@ namespace EasyCosmos
         private string collection;
         private string collectionLink;
 
-        public CosmosRepository(string database, string collection, string url, string key)
+        public CosmosRepository(string database, string collection, string url, string key) : this(database, collection)
         {
-            db = database;
-            this.collection = collection;
             Client = new DocumentClient(new Uri(url), key);
-            collectionLink = UriFactory.CreateDocumentCollectionUri(database, collection).ToString();
+        }
+
+        public CosmosRepository(string database, string collection, IDocumentClient client) : this(database, collection)
+        {
+            Client = client;
+        }
+
+        private CosmosRepository(string database, string collection)
+        {
+            this.db = database;
+            this.collection = collection;
+            this.collectionLink = UriFactory.CreateDocumentCollectionUri(database, collection).ToString();
         }
 
         public async Task CreateCollectionAsync()

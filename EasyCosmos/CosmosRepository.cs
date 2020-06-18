@@ -45,7 +45,7 @@ namespace EasyCosmos
 
             try
             {
-                var query = Client.CreateDocumentQuery<T>(collectionLink)
+                var query = Client.CreateDocumentQuery<T>(collectionLink, new FeedOptions { EnableCrossPartitionQuery = true })
                       .Where(e => e.Type == entityTypeName)
                       .AsDocumentQuery();
 
